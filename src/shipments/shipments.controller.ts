@@ -9,6 +9,10 @@ import {
   GetFreightRequestDto,
   GetFreightResponseDto,
 } from '../mercury/dto/get-freight.dto';
+import {
+  CreateDeliveryRequestDto,
+  DeliveryRequestResponseDto,
+} from './dto/create-delivery-request.dto';
 
 /**
  * Shipments controller for handling shipment operations
@@ -44,5 +48,21 @@ export class ShipmentsController {
     @Query() quotationRequest: GetFreightRequestDto,
   ): Promise<GetFreightResponseDto> {
     return await this.shipmentsService.getQuotation(quotationRequest);
+  }
+
+  @Post('delivery-request')
+  @ApiOperation({ summary: 'Create delivery request and send emails' })
+  @ApiResponse({
+    status: 201,
+    description: 'Delivery request created successfully and emails sent',
+    type: DeliveryRequestResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  async createDeliveryRequest(
+    @Body() createDeliveryRequestDto: CreateDeliveryRequestDto,
+  ): Promise<DeliveryRequestResponseDto> {
+    return await this.shipmentsService.createDeliveryRequest(
+      createDeliveryRequestDto,
+    );
   }
 }
