@@ -8,6 +8,7 @@ import {
   VirtualAccountTransactionDataDto,
   VirtualAccountTransactionSettledDataDto,
 } from './dto/virtual-account-transaction.dto';
+import { CollectionSettledDataDto } from './dto/collection-settled.dto';
 import { MailService } from '../mail/mail.service';
 
 /**
@@ -44,6 +45,9 @@ export class WebhooksService {
    * Handles webhook events and routes to appropriate handlers
    */
   async handleEvent(event: string, data: unknown): Promise<void> {
+    this.logger.log(`=== Processing Event: ${event} ===`);
+    this.logger.log(`Event Data Payload: ${JSON.stringify(data, null, 2)}`);
+
     try {
       switch (event) {
         case 'transaction.successful':
@@ -69,13 +73,19 @@ export class WebhooksService {
             data as VirtualAccountTransactionSettledDataDto,
           );
           break;
+        case 'collection.settled':
+          await this.handleCollectionSettled(data as CollectionSettledDataDto);
+          break;
         default:
           this.logger.warn(`Unhandled event: ${event}`);
+          this.logger.warn(`Event Data: ${JSON.stringify(data, null, 2)}`);
       }
+      this.logger.log(`=== Event ${event} processed ===`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error handling event ${event}: ${errorMessage}`);
+      this.logger.error(`Event Data that caused error: ${JSON.stringify(data, null, 2)}`);
       throw error;
     }
   }
@@ -299,6 +309,84 @@ export class WebhooksService {
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  }
+
+  /**
+   * Handles collection settled events
+   */
+  private async handleCollectionSettled(
+    data: CollectionSettledDataDto,
+  ): Promise<void> {
+    this.logger.log(
+      `Collection settled: ${data.id} - ${data.reference} - Amount: ${data.amount} ${data.currency}`,
+    );
+
+    try {
+      let customerEmail: string | null = null;
+      
+      if (data.mobileMoneyDetails?.accountName) {
+        const emailMatch = data.mobileMoneyDetails.accountName.match(
+          /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
+        );
+        if (emailMatch) {
+          customerEmail = emailMatch[0];
+        }
+      }
+
+      if (!customerEmail && data.reference) {
+        const emailMatch = data.reference.match(
+          /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
+        );
+        if (emailMatch) {
+          customerEmail = emailMatch[0];
+        }
+      }
+
+      const shippingDetails = {
+        transactionReference: data.reference || data.lencoReference,
+        amount: data.amount,
+        narration: `Payment via ${data.type} - ${data.mobileMoneyDetails?.operator || 'N/A'}`,
+        address: data.mobileMoneyDetails
+          ? {
+              accountName: data.mobileMoneyDetails.accountName,
+              accountNumber: data.mobileMoneyDetails.phone,
+              bank: {
+                name: data.mobileMoneyDetails.operator,
+                code: data.mobileMoneyDetails.country,
+              },
+            }
+          : undefined,
+        status: data.settlementStatus,
+      };
+
+      this.logger.log(`Attempting to extract customer email...`);
+      this.logger.log(`Mobile money account name: ${data.mobileMoneyDetails?.accountName || 'N/A'}`);
+      this.logger.log(`Reference: ${data.reference || 'N/A'}`);
+      this.logger.log(`Extracted customer email: ${customerEmail || 'NOT FOUND'}`);
+
+      if (customerEmail && this.isValidEmail(customerEmail)) {
+        this.logger.log(`Valid email found! Sending customer email to: ${customerEmail}`);
+        await this.mailService.sendCustomerEmail(
+          customerEmail,
+          shippingDetails,
+        );
+      } else {
+        this.logger.warn(`No valid customer email found for collection ${data.id}`);
+        this.logger.warn(`Customer email extraction failed - will only send staff email`);
+      }
+
+      this.logger.log('Sending staff email (always sent)');
+      await this.mailService.sendStaffEmail({
+        ...shippingDetails,
+        customerEmail: customerEmail && this.isValidEmail(customerEmail) ? customerEmail : undefined,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Error sending emails for collection ${data.id}: ${errorMessage}`,
+      );
+    }
   }
 }
 

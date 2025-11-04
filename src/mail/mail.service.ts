@@ -44,21 +44,32 @@ export class MailService {
     },
   ): Promise<void> {
     try {
+      this.logger.log(`=== Sending Customer Email ===`);
+      this.logger.log(`To: ${customerEmail}`);
+      this.logger.log(`Shipping Details: ${JSON.stringify(shippingDetails, null, 2)}`);
+      
       const subject = 'Your Order Payment Confirmed - Shipping Details';
       const html = this.generateCustomerEmailTemplate(shippingDetails);
 
-      await this.resend.emails.send({
+      this.logger.log(`Resend API Key configured: ${!!process.env.RESEND_API_KEY}`);
+      this.logger.log(`From: ${this.fromEmail}`);
+
+      const result = await this.resend.emails.send({
         from: this.fromEmail,
         to: customerEmail,
         subject,
         html,
       });
 
-      this.logger.log(`Customer email sent to ${customerEmail}`);
+      this.logger.log(`Email send result: ${JSON.stringify(result, null, 2)}`);
+      this.logger.log(`Customer email sent successfully to ${customerEmail}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error sending customer email: ${errorMessage}`);
+      if (error instanceof Error && error.stack) {
+        this.logger.error(`Stack trace: ${error.stack}`);
+      }
       throw error;
     }
   }
@@ -84,25 +95,37 @@ export class MailService {
   ): Promise<void> {
     if (this.staffEmails.length === 0) {
       this.logger.warn('No staff emails configured');
+      this.logger.warn(`STAFF_EMAILS env var: ${process.env.STAFF_EMAILS || 'not set'}`);
       return;
     }
 
     try {
+      this.logger.log(`=== Sending Staff Email ===`);
+      this.logger.log(`To: ${this.staffEmails.join(', ')}`);
+      this.logger.log(`Shipping Details: ${JSON.stringify(shippingDetails, null, 2)}`);
+      
       const subject = 'New Payment Received - Shipping Required';
       const html = this.generateStaffEmailTemplate(shippingDetails);
 
-      await this.resend.emails.send({
+      this.logger.log(`Resend API Key configured: ${!!process.env.RESEND_API_KEY}`);
+      this.logger.log(`From: ${this.fromEmail}`);
+
+      const result = await this.resend.emails.send({
         from: this.fromEmail,
         to: this.staffEmails,
         subject,
         html,
       });
 
-      this.logger.log(`Staff email sent to ${this.staffEmails.join(', ')}`);
+      this.logger.log(`Email send result: ${JSON.stringify(result, null, 2)}`);
+      this.logger.log(`Staff email sent successfully to ${this.staffEmails.join(', ')}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error sending staff email: ${errorMessage}`);
+      if (error instanceof Error && error.stack) {
+        this.logger.error(`Stack trace: ${error.stack}`);
+      }
       throw error;
     }
   }
