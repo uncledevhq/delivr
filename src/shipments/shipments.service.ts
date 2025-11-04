@@ -45,7 +45,9 @@ export class ShipmentsService {
       );
       return this.mapToResponseDto(shipment);
     } catch (error) {
-      this.logger.error(`Error creating shipment: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error creating shipment: ${errorMessage}`);
       throw error;
     }
   }
@@ -65,12 +67,16 @@ export class ShipmentsService {
       }
       return this.mapToResponseDto(shipment);
     } catch (error) {
-      this.logger.error(`Error getting shipment by waybill: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error getting shipment by waybill: ${errorMessage}`);
       throw error;
     }
   }
 
-  private mapToResponseDto(shipment: any): ShipmentResponseDto {
+  private mapToResponseDto(
+    shipment: Prisma.ShipmentGetPayload<Record<string, never>>,
+  ): ShipmentResponseDto {
     return {
       id: shipment.id,
       orderId: shipment.orderId,
