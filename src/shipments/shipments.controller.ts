@@ -1,7 +1,10 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ShipmentsService } from './shipments.service';
-import { CreateShipmentDto, ShipmentResponseDto } from './dto/create-shipment.dto';
+import {
+  CreateShipmentDto,
+  ShipmentResponseDto,
+} from './dto/create-shipment.dto';
 
 /**
  * Shipments controller for handling shipment operations
@@ -19,8 +22,9 @@ export class ShipmentsController {
     type: ShipmentResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  async createShipment(@Body() createShipmentDto: CreateShipmentDto): Promise<ShipmentResponseDto> {
+  async createShipment(
+    @Body() createShipmentDto: CreateShipmentDto,
+  ): Promise<ShipmentResponseDto> {
     return await this.shipmentsService.createShipment(createShipmentDto);
   }
 }
-

@@ -1,4 +1,10 @@
-import { Controller, Get, Param, HttpStatus, HttpException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { MercuryService } from '../mercury/mercury.service';
 import { TrackShipmentResponseDto } from '../mercury/dto/track-shipment.dto';
@@ -23,8 +29,13 @@ export class TrackingController {
     description: 'Tracking details retrieved successfully',
     type: TrackShipmentResponseDto,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Shipment not found' })
-  async getTrackingDetails(@Param('waybill') waybill: string): Promise<TrackShipmentResponseDto> {
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Shipment not found',
+  })
+  async getTrackingDetails(
+    @Param('waybill') waybill: string,
+  ): Promise<TrackShipmentResponseDto> {
     const shipment = await this.shipmentsService.getShipmentByWaybill(waybill);
     if (!shipment) {
       throw new HttpException('Shipment not found', HttpStatus.NOT_FOUND);
@@ -40,8 +51,13 @@ export class TrackingController {
     description: 'Shipment status retrieved successfully',
     type: TrackShipmentResponseDto,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Shipment not found' })
-  async getTrackingStatus(@Param('waybill') waybill: string): Promise<TrackShipmentResponseDto> {
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Shipment not found',
+  })
+  async getTrackingStatus(
+    @Param('waybill') waybill: string,
+  ): Promise<TrackShipmentResponseDto> {
     const shipment = await this.shipmentsService.getShipmentByWaybill(waybill);
     if (!shipment) {
       throw new HttpException('Shipment not found', HttpStatus.NOT_FOUND);
@@ -49,4 +65,3 @@ export class TrackingController {
     return await this.mercuryService.getShipmentStatus(waybill);
   }
 }
-
