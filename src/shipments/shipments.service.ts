@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MercuryService } from '../mercury/mercury.service';
-import { CreateShipmentDto, ShipmentResponseDto } from './dto/create-shipment.dto';
+import {
+  CreateShipmentDto,
+  ShipmentResponseDto,
+} from './dto/create-shipment.dto';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -19,9 +22,13 @@ export class ShipmentsService {
   /**
    * Creates a shipment after payment callback
    */
-  async createShipment(createShipmentDto: CreateShipmentDto): Promise<ShipmentResponseDto> {
+  async createShipment(
+    createShipmentDto: CreateShipmentDto,
+  ): Promise<ShipmentResponseDto> {
     try {
-      const mercuryResponse = await this.mercuryService.bookCollection(createShipmentDto.mercuryData);
+      const mercuryResponse = await this.mercuryService.bookCollection(
+        createShipmentDto.mercuryData,
+      );
       const waybill = mercuryResponse.waybill?.[0] || null;
       const rate = mercuryResponse.rate ? Number(mercuryResponse.rate) : null;
       const shipment = await this.prisma.shipment.create({
@@ -33,7 +40,9 @@ export class ShipmentsService {
           status: 'booked',
         },
       });
-      this.logger.log(`Shipment created: ${shipment.id} with waybill: ${waybill}`);
+      this.logger.log(
+        `Shipment created: ${shipment.id} with waybill: ${waybill}`,
+      );
       return this.mapToResponseDto(shipment);
     } catch (error) {
       this.logger.error(`Error creating shipment: ${error.message}`);
@@ -44,7 +53,9 @@ export class ShipmentsService {
   /**
    * Gets shipment by waybill
    */
-  async getShipmentByWaybill(waybill: string): Promise<ShipmentResponseDto | null> {
+  async getShipmentByWaybill(
+    waybill: string,
+  ): Promise<ShipmentResponseDto | null> {
     try {
       const shipment = await this.prisma.shipment.findUnique({
         where: { waybill },
@@ -72,4 +83,3 @@ export class ShipmentsService {
     };
   }
 }
-
