@@ -19,6 +19,7 @@ async function bootstrap(): Promise<void> {
     .addTag('shipments')
     .addTag('mercury')
     .addTag('admin')
+    .addTag('webhooks')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

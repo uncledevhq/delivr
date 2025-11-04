@@ -6,6 +6,10 @@ import {
   ShipmentResponseDto,
 } from './dto/create-shipment.dto';
 import { Prisma } from '@prisma/client';
+import {
+  GetFreightRequestDto,
+  GetFreightResponseDto,
+} from '../mercury/dto/get-freight.dto';
 
 /**
  * Shipments service for handling shipment operations
@@ -70,6 +74,28 @@ export class ShipmentsService {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error getting shipment by waybill: ${errorMessage}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets shipping quotation/rate without booking a shipment
+   */
+  async getQuotation(
+    quotationRequest: GetFreightRequestDto,
+  ): Promise<GetFreightResponseDto> {
+    try {
+      const quotation =
+        await this.mercuryService.getFreightQuotation(quotationRequest);
+      const rate = quotation.rate ?? 0;
+      this.logger.log(
+        `Quotation retrieved: Rate ${rate} for service ${quotationRequest.domestic_service}/${quotationRequest.international_service}`,
+      );
+      return quotation;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error getting quotation: ${errorMessage}`);
       throw error;
     }
   }

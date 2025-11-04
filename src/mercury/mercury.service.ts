@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { BookCollectionRequestDto, BookCollectionResponseDto } from './dto/book-collection.dto';
 import { TrackShipmentResponseDto } from './dto/track-shipment.dto';
+import { GetFreightRequestDto, GetFreightResponseDto } from './dto/get-freight.dto';
 
 /**
  * Mercury API service for handling shipping operations
@@ -143,12 +144,55 @@ export class MercuryService {
       }
       return response.data;
     } catch (error) {
-      this.logger.error(`Error getting shipment status: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error getting shipment status: ${errorMessage}`);
       if (error instanceof HttpException) {
         throw error;
       }
       throw new HttpException(
         'Failed to get shipment status from Mercury API',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Gets freight quotation/rate without booking a shipment
+   */
+  async getFreightQuotation(
+    request: GetFreightRequestDto,
+  ): Promise<GetFreightResponseDto> {
+    try {
+      const payload = {
+        email: request.email || this.mercuryEmail,
+        private_key: request.private_key || this.mercuryPrivateKey,
+        domestic_service: request.domestic_service,
+        international_service: request.international_service,
+        shipment: request.shipment,
+      };
+      const response = await this.axiosInstance.get<GetFreightResponseDto>(
+        '/getfreight',
+        {
+          params: payload,
+        },
+      );
+      if (response.data.error_code !== this.SUCCESS_CODE) {
+        throw new HttpException(
+          response.data.error_msg || 'Failed to get freight quotation',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error getting freight quotation: ${errorMessage}`);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Failed to get freight quotation from Mercury API',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
