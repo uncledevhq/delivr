@@ -12,7 +12,7 @@ export class MailService {
   private readonly staffEmails: string[];
 
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY || 're_6d4J52nS_DrKoNoQF9cDmFpt9i69xs65y'; 
+    const apiKey = process.env.RESEND_API_KEY; 
     if (!apiKey) {
       this.logger.warn('RESEND_API_KEY not found in environment variables');
     }
